@@ -1,0 +1,45 @@
+name: Deploy to gh-pages
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        branches:
+            - master
+        types:
+            - closed
+    workflow_dispatch:
+
+permissions:
+    contents: write
+    pages: write
+    id-token: write
+
+concurrency:
+    group: "pages"
+    cancel-in-progress: false
+
+jobs:
+    deploy:
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  persist-credentials: false
+            - name: Use Node.js 22
+              uses: actions/setup-node@v2
+              with:
+                  node-version: "22"
+            - name: Run npm ci and build
+              run: |
+                  npm ci
+                  npm run build
+              # npm run test
+            - name: Push dist to gh-pages
+              uses: JamesIves/github-pages-deploy-action@v4
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  folder: dist
